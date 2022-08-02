@@ -86,3 +86,19 @@ function _awsSetProfile() {
    echo "$ aws-vault exec $1 -- aws s3 ls    <-- if this is too long"
    echo "$ aws s3 ls   <-- this is the same but shorter and using AWS profile $1"
 }
+
+function awsp() {
+  if [[ -z "$1" ]]; then
+    CURRENT_PROFILE="$AWS_PROFILE"
+
+    if [ -z "$CURRENT_PROFILE" ]; then
+        CURRENT_PROFILE=none
+    fi
+
+    echo "Current profile:\n[$CURRENT_PROFILE]\nAvailable profiles:\n$(_awsListProfile)"
+
+    return
+  fi
+
+  _awsSwitchProfile $1
+}
