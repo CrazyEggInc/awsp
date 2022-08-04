@@ -21,10 +21,10 @@ Install
 =======
 
 * [jq](https://stedolan.github.io/jq/) should be installed
-* Download [awsp_functions.sh](https://raw.githubusercontent.com/antonbabenko/awsp/master/awsp_functions.sh) anywhere you like (for example, `~/awsp_functions.sh`) and make it executable:
+* Download [awsp_functions.sh](https://raw.githubusercontent.com/CrazyEggInc/awsp/master/awsp_functions.sh) anywhere you like (for example, `~/awsp_functions.sh`) and make it executable:
 
 ```
-    $ wget -O ~/awsp_functions.sh https://raw.githubusercontent.com/antonbabenko/awsp/master/awsp_functions.sh
+    $ wget -O ~/awsp_functions.sh https://raw.githubusercontent.com/CrazyEggInc/awsp/master/awsp_functions.sh
     $ chmod +x ~/awsp_functions.sh
    ```
    
