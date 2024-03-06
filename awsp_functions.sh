@@ -2,16 +2,6 @@
 
 # @source - https://github.com/antonbabenko/awsp
 
-function _awsListAll() {
-    credentialFileLocation=$(env | grep AWS_SHARED_CREDENTIALS_FILE | cut -d= -f2);
-    if [ -z $credentialFileLocation ]; then
-        credentialFileLocation=~/.aws/credentials
-    fi
-    while read line; do
-        if [[ $line == "["* ]]; then echo "$line"; fi;
-    done < $credentialFileLocation;
-}
-
 function _awsListProfile() {
     profileFileLocation=$(env | grep AWS_CONFIG_FILE | cut -d= -f2);
     if [ -z $profileFileLocation ]; then
@@ -28,6 +18,7 @@ function _awsSwitchProfile() {
    exists="$(aws configure get aws_access_key_id --profile $1)"
 
    if [[ -n $exists ]]; then
+       region="$(aws configure get region --profile $1)"
        role_arn="$(aws configure get role_arn --profile $1)"
        mfa_serial="$(aws configure get mfa_serial --profile $1)"
 
@@ -63,28 +54,18 @@ function _awsSwitchProfile() {
            aws_secret_access_key="$(aws configure get aws_secret_access_key --profile $1)"
            aws_session_token=""
        fi
-       export AWS_DEFAULT_PROFILE=$1
-	   export AWS_PROFILE=$1
-       export AWS_ACCESS_KEY_ID=$aws_access_key_id
-       export AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
-       [[ -z "$aws_session_token" ]] && unset AWS_SESSION_TOKEN || export AWS_SESSION_TOKEN=$aws_session_token
 
-       echo "Switched to AWS Profile: $1";
+       aws configure set region --profile "$1-temp" "$region"
+       aws configure set aws_access_key_id --profile "$1-temp" "$aws_access_key_id"
+       aws configure set aws_secret_access_key --profile "$1-temp" "$aws_secret_access_key"
+       aws configure set aws_session_token --profile "$1-temp" "$aws_session_token"
+
+       export AWS_DEFAULT_PROFILE="$1-temp"
+	   export AWS_PROFILE="$1-temp"
+
+       echo "Switched to AWS Profile: $1_temp";
        aws configure list
    fi
-}
-
-# Set AWS_DEFAULT_PROFILE and AWS_PROFILE env variables
-function _awsSetProfile() {
-   if [ -z $1 ]; then  echo "Usage: awsp profilename"; return; fi
-
-   export AWS_DEFAULT_PROFILE=$1
-   export AWS_PROFILE=$1
-
-   echo "Switched to AWS Profile: $1"
-   echo "Environment variables with credentials were not set (which is desired). Sample commands to run:"
-   echo "$ aws-vault exec $1 -- aws s3 ls    <-- if this is too long"
-   echo "$ aws s3 ls   <-- this is the same but shorter and using AWS profile $1"
 }
 
 function awsp() {
