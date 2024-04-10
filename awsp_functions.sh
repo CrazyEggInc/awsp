@@ -22,18 +22,42 @@ function _awsSwitchProfile() {
        role_arn="$(aws configure get role_arn --profile $1)"
        mfa_serial="$(aws configure get mfa_serial --profile $1)"
 
+       # profile vars
+       source_profile="$(aws configure get source_profile --profile $1)"
+       if [[ -n $source_profile ]]; then
+           profile=$source_profile
+       else
+           profile=$1
+       fi
+
+       temp_profile="$profile-temp"
+
+       session_token="$(aws configure get aws_session_token --profile "$temp_profile")"
+
+       if [[ -n $session_token ]]; then
+           # there is an existing session, check if it has expired
+           export AWS_DEFAULT_PROFILE="$temp_profile"
+           export AWS_PROFILE="$temp_profile"
+
+           output=$(aws sts get-caller-identity 2>&1)
+           identity_status=$?
+
+           if [ $identity_status -eq 0 ]; then
+               # credentials are still good, skip refreshing
+               echo "Switched to AWS Profile: $temp_profile\n";
+               aws configure list
+               return
+           fi
+       fi
+
+       # credentials need refresh
        if [[ -n $role_arn || -n $mfa_serial ]]; then
            if [[ -n $mfa_serial ]]; then
-               echo "Please enter your MFA token for $mfa_serial:"
+               echo "Credentials need refreshing, please enter your MFA token for $mfa_serial:"
                read mfa_token
            fi
 
-           source_profile="$(aws configure get source_profile --profile $1)"
-           if [[ -n $source_profile ]]; then
-               profile=$source_profile
-           else
-               profile=$1
-           fi
+
 
            if [[ -n $role_arn ]]; then
               echo "Assuming role $role_arn using profile $profile"
@@ -55,15 +79,15 @@ function _awsSwitchProfile() {
            aws_session_token=""
        fi
 
-       aws configure set region --profile "$1-temp" "$region"
-       aws configure set aws_access_key_id --profile "$1-temp" "$aws_access_key_id"
-       aws configure set aws_secret_access_key --profile "$1-temp" "$aws_secret_access_key"
-       aws configure set aws_session_token --profile "$1-temp" "$aws_session_token"
+       aws configure set region --profile "$temp_profile" "$region"
+       aws configure set aws_access_key_id --profile "$temp_profile" "$aws_access_key_id"
+       aws configure set aws_secret_access_key --profile "$temp_profile" "$aws_secret_access_key"
+       aws configure set aws_session_token --profile "$temp_profile" "$aws_session_token"
 
-       export AWS_DEFAULT_PROFILE="$1-temp"
-	   export AWS_PROFILE="$1-temp"
+       export AWS_DEFAULT_PROFILE="$temp_profile"
+       export AWS_PROFILE="$temp_profile"
 
-       echo "Switched to AWS Profile: $1_temp";
+       echo "Switched to AWS Profile: $temp_profile\n";
        aws configure list
    fi
 }
