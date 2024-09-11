@@ -39,7 +39,7 @@ function _awsSwitchProfile() {
            export AWS_DEFAULT_PROFILE="$temp_profile"
            export AWS_PROFILE="$temp_profile"
 
-           output=$(aws sts get-caller-identity 2>&1)
+           output=$(aws account list-regions 2>&1)
            identity_status=$?
 
            if [ $identity_status -eq 0 ]; then
@@ -106,4 +106,9 @@ function awsp() {
   fi
 
   _awsSwitchProfile $1
+}
+
+# localstack
+function awsl() {
+    AWS_ACCESS_KEY_ID=localstack AWS_SECRET_ACCESS_KEY=localstack AWS_DEFAULT_REGION=us-east-1 aws --endpoint-url=http://localhost:4566 "$@"
 }
