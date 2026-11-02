@@ -59,6 +59,11 @@ To change AWS profile to use production account (111111111111) which requires MF
     $ awsp company-production-anton
     # Please enter your MFA token for arn:aws:iam::333333333333:mfa/anton
     > 123456
+
+Role-only profiles use their own `<profile>-temp` cache, separate from the source
+profile. When MFA is configured on the source profile instead, `awsp` authenticates
+that source before assuming the role. Failed authentication leaves the current
+profile unchanged.
     
 Notes
 =====
