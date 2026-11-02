@@ -61,7 +61,8 @@ To change AWS profile to use production account (111111111111) which requires MF
     > 123456
 
 Role-only profiles use their own `<profile>-temp` cache, separate from the source
-profile. When MFA is configured on the source profile instead, `awsp` authenticates
+profile. Changing the role or source profile refreshes the cache.
+When MFA is configured on the source profile instead, `awsp` authenticates
 that source before assuming the role. Failed authentication leaves the current
 profile unchanged.
     

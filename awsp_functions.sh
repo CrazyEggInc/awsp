@@ -18,6 +18,7 @@ function _awsSwitchProfile() {
    local exists region role_arn mfa_serial source_profile profile temp_profile
    local session_token mfa_token JSON aws_access_key_id aws_secret_access_key aws_session_token
    local source_mfa_serial source_role_arn profile_chain="${2:-}|"
+   local cached_role_arn cached_source_profile cache_valid
    case "$profile_chain" in
        *"|$1|"*) echo "Circular source_profile reference: $1" >&2; return 1 ;;
    esac
@@ -44,8 +45,11 @@ function _awsSwitchProfile() {
        temp_profile="$1-temp"
 
        session_token="$(aws configure get aws_session_token --profile "$temp_profile")"
+       cached_role_arn="$(aws configure get awsp_role_arn --profile "$temp_profile")"
+       cached_source_profile="$(aws configure get awsp_source_profile --profile "$temp_profile")"
+       cache_valid="$(aws configure get awsp_cache_valid --profile "$temp_profile")"
 
-       if [[ -n $session_token ]]; then
+       if [[ -n $session_token && $cache_valid == true && $cached_role_arn == "$role_arn" && $cached_source_profile == "$source_profile" ]]; then
            # there is an existing session, check if it has expired
            if aws sts get-caller-identity --profile "$temp_profile" >/dev/null 2>&1; then
                # credentials are still good, skip refreshing
@@ -102,10 +106,14 @@ function _awsSwitchProfile() {
            fi
        fi
 
+       aws configure set awsp_cache_valid --profile "$temp_profile" false || return 1
        aws configure set region --profile "$temp_profile" "$region" || return 1
        aws configure set aws_access_key_id --profile "$temp_profile" "$aws_access_key_id" || return 1
        aws configure set aws_secret_access_key --profile "$temp_profile" "$aws_secret_access_key" || return 1
        aws configure set aws_session_token --profile "$temp_profile" "$aws_session_token" || return 1
+       aws configure set awsp_role_arn --profile "$temp_profile" "$role_arn" || return 1
+       aws configure set awsp_source_profile --profile "$temp_profile" "$source_profile" || return 1
+       aws configure set awsp_cache_valid --profile "$temp_profile" true || return 1
 
        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN
        export AWS_DEFAULT_PROFILE="$temp_profile"
@@ -119,6 +127,7 @@ function _awsSwitchProfile() {
    fi
 }
 
+# List available profiles, or switch to the requested profile.
 function awsp() {
   if [[ -z "$1" ]]; then
     CURRENT_PROFILE="$AWS_PROFILE"
