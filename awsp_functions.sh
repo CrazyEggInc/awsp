@@ -44,10 +44,10 @@ function _awsSwitchProfile() {
 
        temp_profile="$1-temp"
 
-       session_token="$(aws configure get aws_session_token --profile "$temp_profile")"
-       cached_role_arn="$(aws configure get awsp_role_arn --profile "$temp_profile")"
-       cached_source_profile="$(aws configure get awsp_source_profile --profile "$temp_profile")"
-       cache_valid="$(aws configure get awsp_cache_valid --profile "$temp_profile")"
+       session_token="$(aws configure get aws_session_token --profile "$temp_profile" 2>/dev/null)"
+       cached_role_arn="$(aws configure get awsp_role_arn --profile "$temp_profile" 2>/dev/null)"
+       cached_source_profile="$(aws configure get awsp_source_profile --profile "$temp_profile" 2>/dev/null)"
+       cache_valid="$(aws configure get awsp_cache_valid --profile "$temp_profile" 2>/dev/null)"
 
        if [[ -n $session_token && $cache_valid == true && $cached_role_arn == "$role_arn" && $cached_source_profile == "$source_profile" ]]; then
            # there is an existing session, check if it has expired
