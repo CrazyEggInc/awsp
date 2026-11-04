@@ -74,13 +74,6 @@ A permanent permission denial will also trigger authentication; fresh MFA cannot
 grant missing permissions. Network and service errors are reported without
 refreshing credentials or changing the selected profile.
 
-Tests (mocked AWS; Bash, Zsh, and jq required):
-
-```sh
-bash tests/cache-probe.sh
-zsh tests/cache-probe.sh
-```
-    
 Notes
 =====
 
