@@ -19,6 +19,7 @@ function _awsSwitchProfile() {
    local session_token mfa_token JSON aws_access_key_id aws_secret_access_key aws_session_token
    local source_mfa_serial source_role_arn profile_chain="${2:-}|"
    local cached_role_arn cached_source_profile cache_valid
+   local probe_output probe_status
    case "$profile_chain" in
        *"|$1|"*) echo "Circular source_profile reference: $1" >&2; return 1 ;;
    esac
@@ -50,8 +51,8 @@ function _awsSwitchProfile() {
        cache_valid="$(aws configure get awsp_cache_valid --profile "$temp_profile" 2>/dev/null)"
 
        if [[ ( -n $role_arn || -n $mfa_serial ) && -n $session_token && $cache_valid == true && $cached_role_arn == "$role_arn" && $cached_source_profile == "$source_profile" ]]; then
-           # there is an existing session, check if it has expired
-           if aws sts get-caller-identity --profile "$temp_profile" >/dev/null 2>&1; then
+           # STS identity checks can succeed even when MFA is too old for IAM policies.
+           if probe_output="$(aws account list-regions --profile "$temp_profile" --no-cli-pager 2>&1)"; then
                # credentials are still good, skip refreshing
                unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_SECURITY_TOKEN
                export AWS_DEFAULT_PROFILE="$temp_profile"
@@ -59,6 +60,17 @@ function _awsSwitchProfile() {
                echo "Switched to AWS Profile: $temp_profile\n";
                aws configure list --profile "$temp_profile"
                return
+           else
+               probe_status=$?
+               case "$probe_output" in
+                   *"(AccessDenied)"*|*"(AccessDeniedException)"*|*"(ExpiredToken)"*|*"(ExpiredTokenException)"*|*"(InvalidClientTokenId)"*)
+                       aws configure set awsp_cache_valid --profile "$temp_profile" false || return 1
+                       ;;
+                   *)
+                       printf '%s\n' "$probe_output" >&2
+                       return "$probe_status"
+                       ;;
+               esac
            fi
        fi
 
