@@ -65,7 +65,15 @@ profile. Changing the role or source profile refreshes the cache.
 When MFA is configured on the source profile instead, `awsp` authenticates
 that source before assuming the role. Failed authentication leaves the current
 profile unchanged.
-    
+
+Cached sessions are checked with `aws account list-regions`, which requires
+`account:ListRegions`. Unlike STS identity checks, this operation can detect an
+MFA-age restriction when that restriction covers this action. Access denial or
+expired/invalid credentials invalidate the cache and trigger authentication.
+A permanent permission denial will also trigger authentication; fresh MFA cannot
+grant missing permissions. Network and service errors are reported without
+refreshing credentials or changing the selected profile.
+
 Notes
 =====
 
